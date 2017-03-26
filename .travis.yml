@@ -1,6 +1,7 @@
 language: go
 go:
   - 1.7.5
+go_import_path: github.com/kubernetes-incubator/external-storage
 services: docker
 
 env:
@@ -8,7 +9,7 @@ env:
 
 before_install:
   - sudo apt-get -qq update
-  - sudo apt-get install -y nfs-common
+  - sudo apt-get install -y nfs-common make
   - curl https://glide.sh/get | sh
   - go get -u github.com/golang/lint/golint
 
@@ -34,6 +35,10 @@ script:
 # TODO
     # Test building library using its dependencies (they ought to be the same as
     # the shared ones)
+  - pushd ./vzstorage-pd/
+  - make
+  - docker build vzstorage-pd:latest .
+  - popd
   - pushd ./lib
   - glide install -v
   - ./verify.sh
