@@ -78,42 +78,17 @@ func (p *vzFSProvisioner) Provision(options controller.VolumeOptions) (*v1.Persi
 	capacity = options.PVC.Spec.Resources.Requests[v1.ResourceName(v1.ResourceStorage)]
 	bytes := capacity.Value()
 
-	if options.PVC.Spec.Selector != nil && options.PVC.Spec.Selector.MatchExpressions != nil {
-		return nil, fmt.Errorf("claim Selector.matchExpressions is not supported")
+	if options.PVC.Spec.Selector != nil {
+		return nil, fmt.Errorf("claim Selector is not supported")
 	}
 	share := fmt.Sprintf("kubernetes-dynamic-pvc-%s", uuid.NewUUID())
 
 	glog.Infof("Add %s %s", share, capacity.Value())
 
-	if options.PVC.Spec.Selector != nil && options.PVC.Spec.Selector.MatchLabels != nil {
-		labels = options.PVC.Spec.Selector.MatchLabels
-	}
-
 	ploop_options := options.Parameters
 
 	ploop_options["volumeId"] = share
 	ploop_options["size"] = fmt.Sprintf("%d", bytes)
-
-	if labels != nil {
-		for k, v := range labels {
-			switch k {
-			case "vzsReplicas":
-				v = strings.Replace(v, ".", ":", 1)
-				v = strings.Replace(v, ".", "/", 1)
-				ploop_options[k] = v
-			case "vzsTier":
-				fallthrough
-			case "vzsEncoding":
-				v = strings.Replace(v, ".", "+", 1)
-				v = strings.Replace(v, ".", "/", 1)
-				ploop_options[k] = v
-			case "vzsFailureDomain":
-				ploop_options[k] = v
-			default:
-				glog.Infof("Skip %s = %s", k, v)
-			}
-		}
-	}
 
 	if err := volume.Create(ploop_options); err != nil {
 		return nil, err
